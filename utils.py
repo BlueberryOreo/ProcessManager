@@ -42,7 +42,7 @@ def get_process_queue(logger):
             sid, submit_time, cwd, script, *args = item.split()
             status = args[-1]
             args = args[:-1]
-            process_queue[i] = [sid, submit_time, cwd, script, args, status]
+            process_queue[i] = [int(sid), submit_time, cwd, script, args, status]
     except FileNotFoundError:
         logger.error("process_queue.que not found")
     return process_queue
