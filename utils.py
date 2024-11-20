@@ -85,7 +85,7 @@ def get_script_config(script_path):
 def check_running_processes(logger):
     # TODO: Refine this function
     while True:
-        queue = get_process_queue(logger)
+        queue = get_process_queue(logger)  # sid, submit_time, base_dir, script, args, status
         modified = False
 
         for process in RUNNING_PROCESS[::]:
@@ -93,7 +93,7 @@ def check_running_processes(logger):
             if not process.is_alive():
                 logger.info(f"Process {process.name} finished")
                 for idx, item in enumerate(queue):
-                    if item[1] == process.name:
+                    if f"{item[0]}-{item[1]}-{item[3]}" == process.name:  # thread name: sid-submit_time-script_path
                         queue[idx][-1] = "finished"
                         modified = True
                 RUNNING_PROCESS.remove(process)
@@ -176,8 +176,8 @@ def start_process(type, logger, **kwargs):
         script_path = kwargs["script_path"]
         kwargs.pop("env_name")
         kwargs.pop("script_path")
-        t_process = Thread(target=run_script_with_conda_env, args=(logger, env_name, script_path, sid, kwargs), name=kwargs["submit_time"])
-        # run_script_with_conda_env(logger, env_name, script_path, **kwargs)
+        # thread name: sid-submit_time-script_path
+        t_process = Thread(target=run_script_with_conda_env, args=(logger, env_name, script_path, sid, kwargs), name=f"{sid}-{kwargs['submit_time']}-{script_path}")
         t_process.start()
         RUNNING_PROCESS.append(t_process)
     else:
