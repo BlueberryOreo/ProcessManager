@@ -81,3 +81,4 @@ submit
 lsqueue
 rmqueue
 *.que
+nohup.out

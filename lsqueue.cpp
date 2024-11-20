@@ -3,7 +3,7 @@
 #include <iomanip>
 using namespace std;
 
-const char *QUEUEPATH = "/path/to/the/project/process_queue.que";
+const char *QUEUEPATH = "/data/sjy/process_man/process_queue.que";
 
 int main(){
 
@@ -11,8 +11,8 @@ int main(){
     string line;
     cout << left << setw(3) << "id" << '\t'
          << left << setw(25) << "submit_time"
-         << setw(30) << "cwd"
-         << setw(50) << "script" << "\t" << "status" << endl;
+         << setw(60) << "cwd"
+         << setw(60) << "script" << "\t" << "status" << endl;
     if(file.is_open()){
         while(getline(file, line)){
             cout << line << endl;

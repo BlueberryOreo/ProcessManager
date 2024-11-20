@@ -55,7 +55,7 @@ def add_process_to_queue(logger, process_name):
 def update_process_queue(logger, process_queue):
     with open("./process_queue.que", "wt") as f:
         for item in process_queue:
-            f.write(f"{item[0]:0>3}\t{item[1]:<25}{item[2]:<30}{item[3]:<50}{' '.join(item[4])}\t{item[5]}\n")
+            f.write(f"{item[0]:0>3}\t{item[1]:<25}{item[2]:<60}{item[3]:<60}{' '.join(item[4])}\t{item[5]}\n")
     logger.info("Updated process queue")
 
 def get_gpu_status(logger):

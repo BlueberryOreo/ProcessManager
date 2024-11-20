@@ -8,7 +8,7 @@
 #include <sstream>
 using namespace std;
 
-const char *QUEUEPATH = "/path/to/the/project/process_queue.que";
+const char *QUEUEPATH = "/data/sjy/process_man/process_queue.que";
 
 int main(int argc, char *args[]) {
 
@@ -56,8 +56,8 @@ int main(int argc, char *args[]) {
     if(ofile.is_open()){
         ofile << right << setw(3) << setfill('0') << last_id + 1 << '\t';
         ofile << left << setw(25) << setfill(' ') << time_str.str();
-        ofile << left << setw(30) << setfill(' ') << cwd_str;
-        ofile << left << setw(50) << script_path;
+        ofile << left << setw(60) << setfill(' ') << cwd_str;
+        ofile << left << setw(60) << script_path;
         for(auto &arg : args_vec){
             ofile << " " << arg;
         }
