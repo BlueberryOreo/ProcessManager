@@ -40,10 +40,12 @@ def run(args):
         if len(queue) > 0:
             logger.info(f"Current process queue size: {len(queue)}")
         
-        for idx, (sid, submit_time, base_dir, process, process_args, status) in enumerate(queue[::]):
+        removed_idx = []
+        for idx, (sid, submit_time, base_dir, process, process_args, status) in enumerate(queue):
             # sid, submit_time, base_dir, process, process_args, status = item
             if status == "finished":
-                queue.pop(idx)
+                # queue.pop(idx)
+                removed_idx.append(idx)
                 modified = True
                 continue
 
@@ -77,6 +79,8 @@ def run(args):
                 modified = True
         
         if modified:
+            for idx in removed_idx:
+                queue.pop(idx)
             update_process_queue(logger, queue)
 
         time.sleep(args.interval)
