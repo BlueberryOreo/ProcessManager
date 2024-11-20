@@ -36,11 +36,11 @@ nohup python main.py --max_process the_max_process_in_queue &
 
 You should follow the file header below while writing a running script. 
 ``` shell
-# TYPE conda(required)
-# GPU_NUM the_gpu_num_you_need(required)
-# ENV_NAME your_conda_env_name(required)
-# OUTPUT_FILE script_output_file
-# CONFIG_END
+#SBATCH TYPE conda(required)
+#SBATCH GPU_NUM the_gpu_num_you_need(required)
+#SBATCH ENV_NAME your_conda_env_name(required)
+#SBATCH OUTPUT_FILE script_output_file
+#SBATCH CONFIG_END
 
 # Your running scripts here. 
 ```

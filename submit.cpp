@@ -8,7 +8,7 @@
 #include <sstream>
 using namespace std;
 
-const char *QUEUEPATH = "/data/sjy/process_man/process_queue.que";
+const char *QUEUEPATH = "/abspath/to/the/project/process_queue.que";
 
 int main(int argc, char *args[]) {
 

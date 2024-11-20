@@ -75,7 +75,7 @@ def get_script_config(script_path):
     
     configs = {}
     for config in script_config:
-        if config.startswith("#"):
+        if config.startswith("#SBATCH"):
             cfg = config.split()
             if cfg[1] == "CONFIG_END":
                 break

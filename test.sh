@@ -1,8 +1,8 @@
-# TYPE conda
-# GPU_NUM 0
-# ENV_NAME cclm
-# OUTPUT_FILE ./test.log
-# CONFIG_END
+#SBATCH TYPE conda
+#SBATCH GPU_NUM 0
+#SBATCH ENV_NAME cclm
+#SBATCH OUTPUT_FILE ./test.log
+#SBATCH CONFIG_END
 
 a=$1
 b=$2
