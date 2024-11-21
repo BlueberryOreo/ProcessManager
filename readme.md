@@ -18,6 +18,7 @@ GNU Make, GNU C++, Python>=3.5
 # Compile the cpp tools
 # Make sure to replace the QUEUEPATH in each cpp file to your own path before compile. 
 make
+make clean_objects
 
 # Add the current directory to environment
 echo 'export PATH=$PATH:$(pwd)' >> ~/.bashrc
@@ -63,11 +64,12 @@ lsqueue
 # id    submimt_time    cwd     script      status
 ```
 
-### Remove a process from the queue
+### Remove process(es) from the queue
 ``` shell
-rmqueue id_showed_in_queue
+rmqueue id1 id2 ...
 
 # Example
 rmqueue 0
 rmqueue 1
+rmqueue 1 2 3
 ```
