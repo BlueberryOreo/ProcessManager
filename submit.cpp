@@ -1,14 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <unistd.h>
-#include <limits.h>
-#include <vector>
-#include <iomanip>
-#include <ctime>
-#include <sstream>
-using namespace std;
-
-const char *QUEUEPATH = "/abspath/to/the/project/process_queue.que";
+#include "utils.h"
 
 int main(int argc, char *args[]) {
 
@@ -51,17 +41,23 @@ int main(int argc, char *args[]) {
     }
 
     time_t now = time(0);
-    stringstream time_str; 
+    stringstream time_str, script_str; 
     time_str << put_time(localtime(&now), "%Y-%m-%d_%H:%M:%S");
+    script_str << script_path;
+    for(auto &arg : args_vec){
+        script_str << " " << arg;
+    }
+
+    Script script{
+        last_id + 1,
+        time_str.str(),
+        cwd_str,
+        script_str.str(),
+        "waiting"
+    };
+
     if(ofile.is_open()){
-        ofile << right << setw(3) << setfill('0') << last_id + 1 << '\t';
-        ofile << left << setw(25) << setfill(' ') << time_str.str();
-        ofile << left << setw(60) << setfill(' ') << cwd_str;
-        ofile << left << setw(60) << script_path;
-        for(auto &arg : args_vec){
-            ofile << " " << arg;
-        }
-        ofile << "\t" << "waiting" << endl;
+        ofile << script << endl;
         ofile.close();
     }
     cout << "Added script " << script_path << " to queue." << endl;

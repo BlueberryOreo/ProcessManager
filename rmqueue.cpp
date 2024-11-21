@@ -1,26 +1,32 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-using namespace std;
-
-const char *QUEUEPATH = "/abspath/to/the/project/process_queue.que";
+#include "utils.h"
 
 int main(int argc, char *args[]) {
 
-    int target_id = stoi(args[1]);
+    // int target_id = stoi(args[1]);
+    set<int> target_ids = {};
+    for(int i = 1; i < argc; i++){
+        target_ids.insert(stoi(args[i]));
+    }
     ifstream ifile(QUEUEPATH);
     string line;
-    vector<string> scripts;
-    bool removed = false;
+    vector<Script> scripts;
+    vector<int> ids;
 
     // TODO: Implement the functionality to remove a running script from the queue.
     if(ifile.is_open()){
         while(getline(ifile, line)){
-            int id = stoi(line.substr(0, 3));
-            if(id != target_id){
-                scripts.push_back(line);
-            }else{
-                removed = true;
+            Script tmp(line);
+            if(target_ids.find(tmp.id) != target_ids.end()){
+                target_ids.erase(tmp.id);
+                ids.push_back(tmp.id);
+                if(tmp.status == "running"){
+                    tmp.status = "terminating";
+                }else{
+                    tmp.status = "0";
+                }
+            }
+            if(tmp.status != "0"){
+                scripts.push_back(tmp);
             }
         }
     }else{
@@ -28,8 +34,12 @@ int main(int argc, char *args[]) {
         return 1;
     }
 
-    if(!removed){
-        cout << "Cannot find script with id " << target_id << " in queue." << endl;
+    if(target_ids.size() > 0){
+        cout << "Cannot find script(s) with id ";
+        for(auto id : target_ids){
+            cout << id << " ";
+        }
+        cout << "in queue." << endl;
         return 0;
     }
 
@@ -44,7 +54,11 @@ int main(int argc, char *args[]) {
         return 1;
     }
 
-    cout << "Removed script with id " << target_id << " from queue." << endl;
+    cout << "Removed script(s) with id ";
+    for(auto id : ids){
+        cout << id << " ";
+    }
+    cout << "from queue." << endl;
 
     return 0;
 }
