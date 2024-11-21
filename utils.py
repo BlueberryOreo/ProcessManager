@@ -157,20 +157,25 @@ class Manager:
                         required_gpus = int(script_config.get("GPU_NUM", "0"))
                         env_name = script_config.get("ENV_NAME", None)
                         output_path = script_config.get("OUTPUT_FILE", None)
-                        self.add_process(type, 
-                                        name,
-                                        env_name=env_name, 
-                                        base=base_dir,
-                                        script_path=process, 
-                                        gpu_num=required_gpus, 
-                                        allocated_gpus=[], 
-                                        output_path=output_path,
-                                        args=process_args,
-                                        sid=sid,
-                                        submit_time=submit_time)
-                        # queue[idx][-1] = "pending"
-                        # modified = True
-                        interval = 2
+                        try:
+                            self.add_process(type, 
+                                            name,
+                                            env_name=env_name, 
+                                            base=base_dir,
+                                            script_path=process, 
+                                            gpu_num=required_gpus, 
+                                            allocated_gpus=[], 
+                                            output_path=output_path,
+                                            args=process_args,
+                                            sid=sid,
+                                            submit_time=submit_time)
+                            # queue[idx][-1] = "pending"
+                            # modified = True
+                            interval = 2
+                        except NotImplementedError as e:
+                            self.logger.error(e)
+                            removed_idx.append(idx)
+                            modified = True
 
                     else:
                         self.logger.error(f"Unknown status: {status}")
