@@ -82,3 +82,4 @@ lsqueue
 rmqueue
 *.que
 nohup.out
+tmp/
