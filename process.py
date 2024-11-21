@@ -9,7 +9,6 @@ class Process(Thread, ABC):
         super().__init__()
         self.name = name
         self.start_time = None  # time when the process started
-        self.running = False
         self.required_gpus = 0
 
     @abstractmethod
@@ -79,7 +78,6 @@ class CondaProcess(Process):
 
             with open(redirect_outf, "wt") as outf:
                 self.process = subprocess.Popen(command, shell=True, stdout=outf, stderr=outf)
-                self.running = True
                 self.process.wait()
         except Exception as e:
             self.logger.error(f"Error while running script {self.script_path}: {e.with_traceback()}")
@@ -90,10 +88,9 @@ class CondaProcess(Process):
         if self.process is not None and self.process.poll() is None:
             self.process.terminate()
             self.logger.info(f"Terminated process: {self.script_path}")
-        self.running = False
 
     def __del__(self):
         if os.path.exists(self.tmp_script_path):
             os.remove(self.tmp_script_path)
         self.terminate()
-        self.join()
+        # self.join()

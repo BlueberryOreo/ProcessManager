@@ -11,7 +11,7 @@ using namespace std;
 
 #ifndef UTILS_H
 #define UTILS_H
-extern const char *QUEUEPATH;
+extern const string PROJECTPATH;
 
 struct Script{
     int id;

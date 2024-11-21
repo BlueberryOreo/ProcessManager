@@ -84,6 +84,9 @@ def get_script_config(script_path):
             configs[cfg[1]] = cfg[2]
     return configs
 
+def get_name(q_item):
+    return f"{q_item[0]}-{q_item[1]}"
+
 class Manager:
     def __init__(self, logger, interval):
         self.logger = logger
@@ -103,11 +106,11 @@ class Manager:
                 self.logger.info(f"Current process queue size: {len(queue)}")
 
             removed_idx = []
-            for idx, (sid, submit_time, base_dir, process, process_args, status) in enumerate(queue):
-                name = f"{sid}-{submit_time}-{process}"
+            for idx, (sid, submit_time, base_dir, q_process, process_args, status) in enumerate(queue):
+                name = get_name(queue[idx])
                 process: Process = RUNNING_PROCESS.get(name, None)
                 if process:
-                    if process.is_alive() and not process.running:
+                    if status == "waiting":
                         # Check if there is enough free gpus
                         required_gpus = process.required_gpus
                         if required_gpus <= len(free_gpus):
@@ -124,7 +127,7 @@ class Manager:
                         modified = True
                         RUNNING_PROCESS.pop(name)
 
-                    if status == "terminating":
+                    if status == "terminating" and process.is_alive():
                         process.terminate()
                         self.logger.info(f"Terminating process: {process.name}")
                         queue[idx][-1] = "finished"
@@ -133,6 +136,8 @@ class Manager:
 
                 else:
                     # The process is not in the RUNNING_PROCESS list
+                    process = q_process
+
                     if status == "finished":
                         removed_idx.append(idx)
                         modified = True
@@ -152,12 +157,12 @@ class Manager:
                         env_name = script_config.get("ENV_NAME", None)
                         output_path = script_config.get("OUTPUT_FILE", None)
                         self.add_process(type, 
-                                        name=name,
+                                        name,
                                         env_name=env_name, 
                                         base=base_dir,
                                         script_path=process, 
                                         gpu_num=required_gpus, 
-                                        allocated_gpus=allocated_gpus, 
+                                        allocated_gpus=[], 
                                         output_path=output_path,
                                         args=process_args,
                                         sid=sid,
@@ -177,7 +182,7 @@ class Manager:
             
             time.sleep(self.interval)
 
-    def add_process(self, type, **kwargs):
+    def add_process(self, type, name, **kwargs):
         sid = kwargs.get("sid", None)
         if sid is None:
             self.logger.error("sid is required")
@@ -190,7 +195,6 @@ class Manager:
                 self.logger.error("script_path is required")
                 return
 
-            name = kwargs.get("name", f"{sid}-{kwargs['submit_time']}-{script_path}")
             env_name = kwargs["env_name"]
             script_path = kwargs["script_path"]
             kwargs.pop("env_name")

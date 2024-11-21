@@ -7,6 +7,8 @@ int main(int argc, char *args[]) {
     for(int i = 1; i < argc; i++){
         target_ids.insert(stoi(args[i]));
     }
+    string QUEUEPATH = PROJECTPATH + (PROJECTPATH.back() == '/' ? "" : "/") + "process_queue.que";
+
     ifstream ifile(QUEUEPATH);
     string line;
     vector<Script> scripts;
@@ -26,6 +28,10 @@ int main(int argc, char *args[]) {
                     tmp.status = "terminating";
                 }else{
                     tmp.status = "0";
+                    string tmp_script_path = PROJECTPATH + (PROJECTPATH.back() == '/' ? "" : "/") + "tmp/tmp_script_" + to_string(tmp.id) + "-" + tmp.submit_time + ".sh";
+                    if(access(tmp_script_path.c_str(), F_OK) == 0){
+                        remove(tmp_script_path.c_str());
+                    }
                 }
             }
             if(tmp.status != "0"){

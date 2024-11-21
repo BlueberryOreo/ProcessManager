@@ -1,6 +1,6 @@
 import time
 
 print("hello world")
-print("Waiting for 5 seconds")
-time.sleep(5)
+print("Waiting for 20 seconds")
+time.sleep(20)
 print("Done")

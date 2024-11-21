@@ -2,6 +2,8 @@
 
 int main(){
 
+    string QUEUEPATH = PROJECTPATH + (PROJECTPATH.back() == '/' ? "" : "/") + "process_queue.que";
+
     ifstream file(QUEUEPATH);
     string line;
     cout << format_output() << endl;

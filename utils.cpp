@@ -1,6 +1,6 @@
 #include "utils.h"
 
-const char *QUEUEPATH = "/abspath/to/project/process_queue.que";
+const string PROJECTPATH = "/abspath/to/process_man/";
 
 Script::Script(string script_line){
     stringstream ss(script_line);

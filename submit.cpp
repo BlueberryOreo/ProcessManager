@@ -8,6 +8,8 @@ int main(int argc, char *args[]) {
         return 1;
     }
 
+    string QUEUEPATH = PROJECTPATH + (PROJECTPATH.back() == '/' ? "" : "/") + "process_queue.que";
+
     ifstream ifile(QUEUEPATH);
     string line;
     int last_id = -1;
