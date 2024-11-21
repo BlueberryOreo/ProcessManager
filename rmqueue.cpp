@@ -13,6 +13,9 @@ int main(int argc, char *args[]) {
     vector<int> ids;
 
     // TODO: Implement the functionality to remove a running script from the queue.
+    //      If the script is running, change the status to "terminating".
+    //      If the script is not running, remove the script from the queue.
+    // Finished
     if(ifile.is_open()){
         while(getline(ifile, line)){
             Script tmp(line);

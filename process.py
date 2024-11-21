@@ -27,11 +27,28 @@ class CondaProcess(Process):
         self.sid = sid
         self.kwargs = kwargs
         self.process = None
-        self.tmp_script_path = f"./tmp_script_{name}.sh"
+        self.tmp_script_path = f"./tmp/tmp_script_{name}.sh"
+        self.script_base = self.kwargs.get("base", "./")
+
+        # Create a temporary script file and copy the content of the original script file to it
+        conda_base = subprocess.check_output(["conda", "info", "--base"], text=True).strip()
+        python_excutable = os.path.join(conda_base, "envs", self.env_name, "bin", "python")
+
+        with open(self.script_path, "r") as f:
+            script_lines = f.readlines()
+
+        with open(self.tmp_script_path, "wt") as f:
+            f.write(f'cd {self.script_base}\n')
+            for line in script_lines:
+                line = line.strip()
+                if "python" in line:
+                    line = line.replace("python", python_excutable)
+                f.write(line + "\n")
 
     def run(self):
         try:
             required_gpus = self.kwargs.get("gpu_num", 0)
+            
             if required_gpus > 0:
                 allocated_gpus = self.kwargs.get("allocated_gpus")
             else:
@@ -45,32 +62,15 @@ class CondaProcess(Process):
             else:
                 gpus = ""
 
-            conda_base = subprocess.check_output(["conda", "info", "--base"], text=True).strip()
-            python_excutable = os.path.join(conda_base, "envs", self.env_name, "bin", "python")
-
-            with open(self.script_path, "r") as f:
-                script_lines = f.readlines()
-            
-            script_base = self.kwargs.get("base", "./")
-            
-
-            with open(self.tmp_script_path, "wt") as f:
-                f.write(f'cd {script_base}\n')
-                for line in script_lines:
-                    line = line.strip()
-                    if "python" in line:
-                        line = line.replace("python", python_excutable)
-                    f.write(line + "\n")
-
             command = f"{gpus} bash {self.tmp_script_path} {' '.join(self.kwargs.get('args', []))}"
             self.logger.info(f"Running script: {self.script_path} submitted at {self.kwargs.get('submit_time')}")
             self.logger.info(f"Command: {command}")
 
             if self.kwargs.get("output_path") is not None:
-                redirect_outf = os.path.join(script_base, self.kwargs["output_path"])
+                redirect_outf = os.path.join(self.script_base, self.kwargs["output_path"])
                 # redirect_outf = kwargs["output_path"]
             else:
-                redirect_outf = os.path.join(script_base, f"{self.sid}-{os.path.basename(self.script_path)}.out")
+                redirect_outf = os.path.join(self.script_base, f"{self.sid}-{os.path.basename(self.script_path)}.out")
                 # redirect_outf = f"{sid}-{os.path.basename(script_path)}.out"
             
             if os.path.dirname(redirect_outf):

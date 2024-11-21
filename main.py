@@ -1,5 +1,5 @@
-import json
 import os
+import shutil
 import argparse
 from threading import Thread
 from utils import *
@@ -19,6 +19,7 @@ def set_args():
     return args
 
 def run(args):
+    # Initialize
     logger = set_logger(args)
     logger.info("Start process, pid={}".format(os.getpid()))
 
@@ -29,6 +30,17 @@ def run(args):
     t_check_running_processes = Thread(target=check_running_processes, args=(logger,), daemon=True)
     t_check_running_processes.start()
 
+    if os.path.exists("./tmp"):
+        shutil.rmtree("./tmp")
+    os.makedirs("./tmp", exist_ok=True)
+
+    # set the processes in queue to waiting
+    queue = get_process_queue(logger)
+    for idx, item in enumerate(queue):
+        queue[idx][-1] = "waiting"
+    update_process_queue(logger, queue)
+
+    # Main loop
     while True:
         gpu_status = get_gpu_status(logger)
         free_gpus = []
