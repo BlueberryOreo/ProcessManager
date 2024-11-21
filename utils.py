@@ -95,6 +95,7 @@ class Manager:
     
     def loop(self):
         while self.running:
+            interval = self.interval
             gpu_status = get_gpu_status(self.logger)
             free_gpus = []
             for gpu_id, mem_use in enumerate(gpu_status):
@@ -169,6 +170,7 @@ class Manager:
                                         submit_time=submit_time)
                         # queue[idx][-1] = "pending"
                         # modified = True
+                        interval = 2
 
                     else:
                         self.logger.error(f"Unknown status: {status}")
@@ -180,7 +182,7 @@ class Manager:
                     queue.pop(idx)
                 update_process_queue(self.logger, queue)
             
-            time.sleep(self.interval)
+            time.sleep(interval)
 
     def add_process(self, type, name, **kwargs):
         sid = kwargs.get("sid", None)
