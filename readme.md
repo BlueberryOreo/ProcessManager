@@ -16,7 +16,7 @@ GNU Make, GNU C++, Python>=3.5
 
 ``` shell
 # Compile the cpp tools
-# Make sure to replace the QUEUEPATH in each cpp file to your own path before compile. 
+# Make sure to replace the QUEUEPATH in utils.cpp to your own path before compile. 
 make
 make clean_objects
 
