@@ -84,41 +84,162 @@ def get_script_config(script_path):
             configs[cfg[1]] = cfg[2]
     return configs
 
-def check_running_processes(logger):
-    # TODO: Refine this function
-    while True:
-        queue = get_process_queue(logger)  # sid, submit_time, base_dir, script, args, status
-        modified = False
+class Manager:
+    def __init__(self, logger, interval):
+        self.logger = logger
+        self.interval = interval
+        self.running = True
+    
+    def loop(self):
+        while self.running:
+            gpu_status = get_gpu_status(self.logger)
+            free_gpus = []
+            for gpu_id, mem_use in enumerate(gpu_status):
+                if mem_use[0] < 400:
+                    free_gpus.append(gpu_id)
+            queue = get_process_queue(self.logger)
+            modified = False
+            if len(queue) > 0:
+                self.logger.info(f"Current process queue size: {len(queue)}")
 
-        # for process in RUNNING_PROCESS[::]:
-        #     process: Process
-        #     if not process.is_alive():
-        #         logger.info(f"Process {process.name} finished")
-        #         for idx, item in enumerate(queue):
-        #             if f"{item[0]}-{item[1]}-{item[3]}" == process.name:  # thread name: sid-submit_time-script_path
-        #                 queue[idx][-1] = "finished"
-        #                 modified = True
-        #         RUNNING_PROCESS.remove(process)
-        for idx, item in enumerate(queue):
-            name = f"{item[0]}-{item[1]}-{item[3]}"
-            status = item[-1]
-            process: Process = RUNNING_PROCESS.get(name, None)
-            if process:
-                if not process.is_alive():
-                    logger.info(f"Process {process.name} finished")
-                    queue[idx][-1] = "finished"
-                    modified = True
-                    del RUNNING_PROCESS[name]
-                if status == "terminating":
-                    process.terminate()
-                    logger.info(f"Terminating process: {process.name}")
-                    queue[idx][-1] = "finished"
-                    modified = True
-                    del RUNNING_PROCESS[name]
-        if modified:
-            update_process_queue(logger, queue)
+            removed_idx = []
+            for idx, (sid, submit_time, base_dir, process, process_args, status) in enumerate(queue):
+                name = f"{sid}-{submit_time}-{process}"
+                process: Process = RUNNING_PROCESS.get(name, None)
+                if process:
+                    if process.is_alive() and not process.running:
+                        # Check if there is enough free gpus
+                        required_gpus = process.required_gpus
+                        if required_gpus <= len(free_gpus):
+                            allocated_gpus = free_gpus[:required_gpus]
+                            free_gpus = free_gpus[required_gpus:]
+                            process.kwargs["allocated_gpus"] = allocated_gpus
+                            process.start()
+                            queue[idx][-1] = "running"
+                            modified = True
 
-        time.sleep(10)
+                    if not process.is_alive():
+                        self.logger.info(f"Process {process.name} finished")
+                        queue[idx][-1] = "finished"
+                        modified = True
+                        RUNNING_PROCESS.pop(name)
+
+                    if status == "terminating":
+                        process.terminate()
+                        self.logger.info(f"Terminating process: {process.name}")
+                        queue[idx][-1] = "finished"
+                        modified = True
+                        RUNNING_PROCESS.pop(name)
+
+                else:
+                    # The process is not in the RUNNING_PROCESS list
+                    if status == "finished":
+                        removed_idx.append(idx)
+                        modified = True
+
+                    elif status == "running" or status == "pending":
+                        self.logger.warning(f"Process {name} is not in the RUNNING_PROCESS list but status is {status}")
+                        self.logger.warning(f"Removing process {name} from queue")
+                        removed_idx.append(idx)
+                        modified = True
+
+                    elif status == "waiting":
+                        # Handling waiting processes
+                        sid = int(sid)
+                        script_config = get_script_config(process)
+                        type = script_config.get("TYPE", None)
+                        required_gpus = int(script_config.get("GPU_NUM", "0"))
+                        env_name = script_config.get("ENV_NAME", None)
+                        output_path = script_config.get("OUTPUT_FILE", None)
+                        self.add_process(type, 
+                                        name=name,
+                                        env_name=env_name, 
+                                        base=base_dir,
+                                        script_path=process, 
+                                        gpu_num=required_gpus, 
+                                        allocated_gpus=allocated_gpus, 
+                                        output_path=output_path,
+                                        args=process_args,
+                                        sid=sid,
+                                        submit_time=submit_time)
+                        # queue[idx][-1] = "pending"
+                        # modified = True
+
+                    else:
+                        self.logger.error(f"Unknown status: {status}")
+                        removed_idx.append(idx)
+                        modified = True
+            
+            if modified:
+                for idx in removed_idx:
+                    queue.pop(idx)
+                update_process_queue(self.logger, queue)
+            
+            time.sleep(self.interval)
+
+    def add_process(self, type, **kwargs):
+        sid = kwargs.get("sid", None)
+        if sid is None:
+            self.logger.error("sid is required")
+            return
+        if type == "conda":
+            if kwargs.get("env_name") is None:
+                self.logger.error("env_name is required")
+                return
+            if kwargs.get("script_path") is None:
+                self.logger.error("script_path is required")
+                return
+
+            name = kwargs.get("name", f"{sid}-{kwargs['submit_time']}-{script_path}")
+            env_name = kwargs["env_name"]
+            script_path = kwargs["script_path"]
+            kwargs.pop("env_name")
+            kwargs.pop("script_path")
+            
+            t_process = CondaProcess(name, self.logger, env_name, script_path, sid, kwargs)
+            # t_process.start()
+            # RUNNING_PROCESS.append(t_process)
+            RUNNING_PROCESS[t_process.name] = t_process
+        else:
+            raise NotImplementedError(type)
+        
+        pass
+
+# def check_running_processes(logger):
+#     # TODO: Refine this function
+#     while True:
+#         queue = get_process_queue(logger)  # sid, submit_time, base_dir, script, args, status
+#         modified = False
+
+#         # for process in RUNNING_PROCESS[::]:
+#         #     process: Process
+#         #     if not process.is_alive():
+#         #         logger.info(f"Process {process.name} finished")
+#         #         for idx, item in enumerate(queue):
+#         #             if f"{item[0]}-{item[1]}-{item[3]}" == process.name:  # thread name: sid-submit_time-script_path
+#         #                 queue[idx][-1] = "finished"
+#         #                 modified = True
+#         #         RUNNING_PROCESS.remove(process)
+#         for idx, item in enumerate(queue):
+#             name = f"{item[0]}-{item[1]}-{item[3]}"
+#             status = item[-1]
+#             process: Process = RUNNING_PROCESS.get(name, None)
+#             if process:
+#                 if not process.is_alive():
+#                     logger.info(f"Process {process.name} finished")
+#                     queue[idx][-1] = "finished"
+#                     modified = True
+#                     RUNNING_PROCESS.pop(name)
+#                 if status == "terminating":
+#                     process.terminate()
+#                     logger.info(f"Terminating process: {process.name}")
+#                     queue[idx][-1] = "finished"
+#                     modified = True
+#                     RUNNING_PROCESS.pop(name)
+#         if modified:
+#             update_process_queue(logger, queue)
+
+#         time.sleep(10)
 
 # def run_script_with_conda_env(logger, env_name, script_path, sid, kwargs):
 #     try:
@@ -176,32 +297,32 @@ def check_running_processes(logger):
 #         logger.error(f"Error while running script: {e.with_traceback()}")
 #         return
 
-def start_process(type, logger, **kwargs):
-    sid = kwargs.get("sid", None)
-    if sid is None:
-        logger.error("sid is required")
-        return
-    if type == "conda":
-        if kwargs.get("env_name") is None:
-            logger.error("env_name is required")
-            return
-        if kwargs.get("script_path") is None:
-            logger.error("script_path is required")
-            return
-        # print("here", kwargs)
-        env_name = kwargs["env_name"]
-        script_path = kwargs["script_path"]
-        kwargs.pop("env_name")
-        kwargs.pop("script_path")
-        # thread name: sid-submit_time-script_path
-        # t_process = Thread(target=run_script_with_conda_env, args=(logger, env_name, script_path, sid, kwargs), name=f"{sid}-{kwargs['submit_time']}-{script_path}")
-        # t_process.start()
-        t_process = CondaProcess(f"{sid}-{kwargs['submit_time']}-{script_path}", logger, env_name, script_path, sid, kwargs)
-        t_process.start()
-        # RUNNING_PROCESS.append(t_process)
-        RUNNING_PROCESS[t_process.name] = t_process
-    else:
-        raise NotImplementedError(type)
+# def start_process(type, logger, **kwargs):
+#     sid = kwargs.get("sid", None)
+#     if sid is None:
+#         logger.error("sid is required")
+#         return
+#     if type == "conda":
+#         if kwargs.get("env_name") is None:
+#             logger.error("env_name is required")
+#             return
+#         if kwargs.get("script_path") is None:
+#             logger.error("script_path is required")
+#             return
+#         # print("here", kwargs)
+#         env_name = kwargs["env_name"]
+#         script_path = kwargs["script_path"]
+#         kwargs.pop("env_name")
+#         kwargs.pop("script_path")
+#         # thread name: sid-submit_time-script_path
+#         # t_process = Thread(target=run_script_with_conda_env, args=(logger, env_name, script_path, sid, kwargs), name=f"{sid}-{kwargs['submit_time']}-{script_path}")
+#         # t_process.start()
+#         t_process = CondaProcess(f"{sid}-{kwargs['submit_time']}-{script_path}", logger, env_name, script_path, sid, kwargs)
+#         t_process.start()
+#         # RUNNING_PROCESS.append(t_process)
+#         RUNNING_PROCESS[t_process.name] = t_process
+#     else:
+#         raise NotImplementedError(type)
     
 
 if __name__ == "__main__":

@@ -9,6 +9,8 @@ class Process(Thread, ABC):
         super().__init__()
         self.name = name
         self.start_time = None  # time when the process started
+        self.running = False
+        self.required_gpus = 0
 
     @abstractmethod
     def run(self):
@@ -29,6 +31,7 @@ class CondaProcess(Process):
         self.process = None
         self.tmp_script_path = f"./tmp/tmp_script_{name}.sh"
         self.script_base = self.kwargs.get("base", "./")
+        self.required_gpus = self.kwargs.get("gpu_num", 0)
 
         # Create a temporary script file and copy the content of the original script file to it
         conda_base = subprocess.check_output(["conda", "info", "--base"], text=True).strip()
@@ -47,16 +50,14 @@ class CondaProcess(Process):
 
     def run(self):
         try:
-            required_gpus = self.kwargs.get("gpu_num", 0)
-            
-            if required_gpus > 0:
+            if self.required_gpus > 0:
                 allocated_gpus = self.kwargs.get("allocated_gpus")
             else:
                 allocated_gpus = []
 
             if allocated_gpus:
-                if len(allocated_gpus) < required_gpus:
-                    self.logger.error(f"Not enough free gpus for process: {self.script_path}, need {required_gpus} gpus")
+                if len(allocated_gpus) < self.required_gpus:
+                    self.logger.error(f"Not enough free gpus for process: {self.script_path}, need {self.required_gpus} gpus")
                     return
                 gpus = f"CUDA_VISIBLE_DEVICES={','.join(map(str, allocated_gpus))}"
             else:
@@ -78,15 +79,18 @@ class CondaProcess(Process):
 
             with open(redirect_outf, "wt") as outf:
                 self.process = subprocess.Popen(command, shell=True, stdout=outf, stderr=outf)
+                self.running = True
                 self.process.wait()
         except Exception as e:
             self.logger.error(f"Error while running script {self.script_path}: {e.with_traceback()}")
-            return
+        finally:
+            self.__del__()
 
     def terminate(self):
         if self.process is not None and self.process.poll() is None:
             self.process.terminate()
             self.logger.info(f"Terminated process: {self.script_path}")
+        self.running = False
 
     def __del__(self):
         if os.path.exists(self.tmp_script_path):
