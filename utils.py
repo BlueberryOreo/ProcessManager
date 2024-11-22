@@ -129,8 +129,8 @@ class Manager:
                         RUNNING_PROCESS.pop(name)
 
                     if status == "terminating" and process.is_alive():
-                        process.terminate()
                         self.logger.info(f"Terminating process: {process.name}")
+                        process.terminate()
                         queue[idx][-1] = "finished"
                         modified = True
                         RUNNING_PROCESS.pop(name)

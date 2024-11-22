@@ -77,7 +77,7 @@ class CondaProcess(Process):
                 os.makedirs(os.path.dirname(redirect_outf), exist_ok=True)
 
             with open(redirect_outf, "wt") as outf:
-                self.process = subprocess.Popen(command, shell=True, stdout=outf, stderr=outf)
+                self.process = subprocess.Popen(command, shell=True, stdout=outf, stderr=outf, preexec_fn=os.setsid)
                 self.process.wait()
         except Exception as e:
             self.logger.error(f"Error while running script {self.script_path}: {e.with_traceback()}")
@@ -86,7 +86,8 @@ class CondaProcess(Process):
 
     def terminate(self):
         if self.process is not None and self.process.poll() is None:
-            self.process.terminate()
+            # self.process.kill()
+            os.killpg(os.getpgid(self.process.pid), 9)
             self.logger.info(f"Terminated process: {self.script_path}")
 
     def __del__(self):
