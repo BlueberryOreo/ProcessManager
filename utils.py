@@ -104,7 +104,7 @@ class Manager:
             queue = get_process_queue(self.logger)
             modified = False
             if len(queue) > 0:
-                self.logger.info(f"Current process queue size: {len(queue)}")
+                self.logger.info(f"Current process queue size: {len(queue)}, free gpus: {len(free_gpus)}")
 
             removed_idx = []
             for idx, (sid, submit_time, base_dir, q_process, process_args, status) in enumerate(queue):
@@ -121,19 +121,19 @@ class Manager:
                             process.start()
                             queue[idx][-1] = "running"
                             modified = True
+                    else:
+                        if not process.is_alive():
+                            self.logger.info(f"Process {process.name} finished")
+                            queue[idx][-1] = "finished"
+                            modified = True
+                            RUNNING_PROCESS.pop(name)
 
-                    if not process.is_alive():
-                        self.logger.info(f"Process {process.name} finished")
-                        queue[idx][-1] = "finished"
-                        modified = True
-                        RUNNING_PROCESS.pop(name)
-
-                    if status == "terminating" and process.is_alive():
-                        self.logger.info(f"Terminating process: {process.name}")
-                        process.terminate()
-                        queue[idx][-1] = "finished"
-                        modified = True
-                        RUNNING_PROCESS.pop(name)
+                        if status == "terminating" and process.is_alive():
+                            self.logger.info(f"Terminating process: {process.name}")
+                            process.terminate()
+                            queue[idx][-1] = "finished"
+                            modified = True
+                            RUNNING_PROCESS.pop(name)
 
                 else:
                     # The process is not in the RUNNING_PROCESS list
