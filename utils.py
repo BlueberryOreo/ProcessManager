@@ -183,6 +183,7 @@ class Manager:
                         modified = True
             
             if modified:
+                removed_idx.sort(reverse=True)
                 for idx in removed_idx:
                     queue.pop(idx)
                 update_process_queue(self.logger, queue)
