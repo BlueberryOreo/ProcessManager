@@ -79,7 +79,6 @@ int main(int argc, char *args[]) {
     ofstream tmp_file(tmp_file_path + tmp_file_name);
 
     if(script_file.is_open() && tmp_file.is_open()){
-        tmp_file << "cd " << cwd_str << endl;
         tmp_file << script_file.rdbuf();
         script_file.close();
         tmp_file.close();

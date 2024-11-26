@@ -28,24 +28,25 @@ class CondaProcess(Process):
         self.sid = sid
         self.kwargs = kwargs
         self.process = None
-        self.tmp_script_path = f"./tmp/tmp_script_{name}.sh"
+        self.tmp_script_path_0 = f"./tmp/tmp_script_{name}.sh"
+        self.tmp_script_path = self.tmp_script_path_0
         self.script_base = self.kwargs.get("base", "./")
         self.required_gpus = self.kwargs.get("gpu_num", 0)
 
-        # # Create a temporary script file and copy the content of the original script file to it
-        # conda_base = subprocess.check_output(["conda", "info", "--base"], text=True).strip()
-        # python_excutable = os.path.join(conda_base, "envs", self.env_name, "bin", "python")
+        # Create a temporary script file and copy the content of the original script file to it
+        conda_base = subprocess.check_output(["conda", "info", "--base"], text=True).strip()
+        python_excutable = os.path.join(conda_base, "envs", self.env_name, "bin", "python")
 
-        # with open(self.script_path, "r") as f:
-        #     script_lines = f.readlines()
+        with open(self.tmp_script_path_0, "r") as f:
+            script_lines = f.readlines()
 
-        # with open(self.tmp_script_path, "wt") as f:
-        #     f.write(f'cd {self.script_base}\n')
-        #     for line in script_lines:
-        #         line = line.strip()
-        #         if "python" in line:
-        #             line = line.replace("python", python_excutable)
-        #         f.write(line + "\n")
+        with open(self.tmp_script_path, "wt") as f:
+            f.write(f'cd {self.script_base}\n')
+            for line in script_lines:
+                line = line.strip()
+                if "python" in line:
+                    line = line.replace("python", python_excutable)
+                f.write(line + "\n")
 
     def run(self):
         try:
