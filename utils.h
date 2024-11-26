@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <ctime>
 #include <sstream>
+#include <sys/stat.h>
 using namespace std;
 
 #ifndef UTILS_H
