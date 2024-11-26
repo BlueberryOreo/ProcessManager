@@ -23,9 +23,11 @@ def run(args):
     logger = set_logger(args)
     logger.info("Start process, pid={}".format(os.getpid()))
 
-    if not os.path.exists("./process_queue.que"):
-        with open("./process_queue.que", "wt") as f:
-            pass
+    if os.path.exists("./process_queue.que"):
+        os.remove("./process_queue.que")
+        
+    with open("./process_queue.que", "wt") as f:
+        pass
     
     # t_check_running_processes = Thread(target=check_running_processes, args=(logger,), daemon=True)
     # t_check_running_processes.start()
